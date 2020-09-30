@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "727163640903",
+    "firebase_url": "https://smartmaze-gamegods.firebaseio.com",
+    "project_id": "smartmaze-gamegods",
+    "storage_bucket": "smartmaze-gamegods.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:727163640903:android:d856155696511d5e062562",
+        "android_client_info": {
+          "package_name": "com.GameGods.SmartMaze"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "727163640903-bvdehltbo0ss6hduucltetb8nsfudscl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAAVtpRZHiR8_AzQhnAh9g9welFVh1mVZ0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "727163640903-bvdehltbo0ss6hduucltetb8nsfudscl.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
