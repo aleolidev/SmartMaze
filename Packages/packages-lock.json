@@ -1,8 +1,8 @@
 {
   "dependencies": {
     "com.google.external-dependency-manager": {
-      "version": "1.2.156",
-      "depth": 2,
+      "version": "1.2.159",
+      "depth": 0,
       "source": "registry",
       "dependencies": {},
       "url": "https://unityregistry-pa.googleapis.com"

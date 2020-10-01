@@ -1,20 +1,21 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 using DG.Tweening;
 using TMPro;
 using Firebase;
 using Firebase.Auth;
-using UnityEngine.Assertions;
+using Google;
 
 public class MainMenuHandler : MonoBehaviour
 {
     [Header("Firebase")]
     public DependencyStatus dependencyStatus;
     public FirebaseAuth auth;    
-    public FirebaseUser User;
+    public FirebaseUser user;
 
     [Header("Login/Register")]
     public GameObject loginBox;
@@ -31,6 +32,10 @@ public class MainMenuHandler : MonoBehaviour
     public GameObject bLoginGoogle;
     public GameObject loginBakground;
     public GameObject warningText;
+
+    //[Header("Login Google")]
+    private string webClientId = "727163640903-bvdehltbo0ss6hduucltetb8nsfudscl.apps.googleusercontent.com";
+    private GoogleSignInConfiguration configuration;
 
     [Header("Username")]
     public TMP_InputField usernameText;
@@ -55,6 +60,8 @@ public class MainMenuHandler : MonoBehaviour
     private bool canSwapLoginMode = true;
 
     public const int maxUsernameLength = 16;
+    private float updateStatusTimer = 0f;
+    
 
     void Start(){
         passwordGO.GetComponent<TMP_InputField>().asteriskChar = '•';
@@ -62,8 +69,20 @@ public class MainMenuHandler : MonoBehaviour
 
     void Update()
     {
-        
+        updateStatusTimer += Time.deltaTime;
         timer += Time.deltaTime;
+
+        if(updateStatusTimer >= 1f){
+            updateStatusTimer = 0f;
+
+            if (auth.CurrentUser != null) {
+                Debug.Log("CONECTADO");
+            // User is signed in.
+            } else {
+                Debug.Log("DESCONECTADO");
+            // No user is signed in.
+            }
+        }
 
         if(!loadingScreenLoaded && timer > 0.2f){
             loadingScreenLoaded = true;
@@ -87,6 +106,11 @@ public class MainMenuHandler : MonoBehaviour
 
     void Awake()
     {
+        configuration = new GoogleSignInConfiguration {
+            WebClientId = webClientId,
+            RequestEmail = true,
+            RequestIdToken = false
+        };
         //Check that all of the necessary dependencies for Firebase are present on the system
         FirebaseApp.CheckAndFixDependenciesAsync().ContinueWith(task =>
         {
@@ -106,13 +130,30 @@ public class MainMenuHandler : MonoBehaviour
     private void InitializeFirebase()
     {
         Debug.Log("Setting up Firebase Auth");
-        //Set the authentication instance object
         auth = FirebaseAuth.DefaultInstance;
+        auth.StateChanged += AuthStateChanged;
+        AuthStateChanged(this, null);
+    }
+
+    void AuthStateChanged(object sender, System.EventArgs eventArgs) {
+        if (auth.CurrentUser != user) {
+            bool signedIn = user != auth.CurrentUser && auth.CurrentUser != null;
+            if (!signedIn && user != null) {
+                Debug.Log("Signed out " + user.DisplayName);
+            }
+            user = auth.CurrentUser;
+            if (signedIn) {
+                Debug.Log("Signed in " + user.DisplayName);
+            }
+        }
     }
 
     //Function for the login button
     public void LoginButton()
     {
+        GoogleSignIn.Configuration = configuration;
+        GoogleSignIn.Configuration.UseGameSignIn = true;
+        GoogleSignIn.Configuration.RequestIdToken = false;
         
         if(loginregisterState == false){
             //Call the login coroutine passing the email and password
@@ -121,6 +162,10 @@ public class MainMenuHandler : MonoBehaviour
             ChangeWindowState();
         }
         //Login(emailText.text, passwordText.text);
+    }
+
+    public void LoginWithGoogleButton(){
+        OnGoogleSignIn();
     }
     //Function for the register button
     public void RegisterButton()
@@ -132,6 +177,11 @@ public class MainMenuHandler : MonoBehaviour
         } else {
             ChangeWindowState();
         }
+    }
+
+    public void LogOutButton(){
+        Debug.Log("Logout");
+        auth.SignOut();
     }
 
     private IEnumerator Login(string _email, string _password)
@@ -181,16 +231,79 @@ public class MainMenuHandler : MonoBehaviour
             {
                 //User is now logged in
                 //Now get the result
-                User = LoginTask.Result;
-                Debug.LogFormat("User signed in successfully: {0} ({1})", User.DisplayName, User.Email);
+                user = LoginTask.Result;
+                Debug.LogFormat("User signed in successfully: {0} ({1})", user.DisplayName, user.Email);
                 warningLoginText.text = "Logged In";
             }
         }
 
     }
 
+    private void SignInWithGoogleInFirebase(string idToken){
+        Firebase.Auth.Credential credential = Firebase.Auth.GoogleAuthProvider.GetCredential(idToken, null);
+        auth.SignInWithCredentialAsync(credential).ContinueWith(task => {
+            if (task.IsCanceled) {
+                Debug.LogError("SignInWithCredentialAsync was canceled.");
+                return;
+            }
+            if (task.IsFaulted) {
+                Debug.LogError("SignInWithCredentialAsync encountered an error: " + task.Exception);
+                return;
+            }
+
+            Firebase.Auth.FirebaseUser newUser = task.Result;
+            Debug.LogFormat("User signed in successfully: {0} ({1})",
+            newUser.DisplayName, newUser.UserId);
+        });
+    }
+
+    internal void OnGoogleAuthenticationFinished(Task<GoogleSignInUser> task) {
+        if (task.IsFaulted) {
+            using (IEnumerator<System.Exception> enumerator = task.Exception.InnerExceptions.GetEnumerator()) {
+                if (enumerator.MoveNext()) {
+                    GoogleSignIn.SignInException error = (GoogleSignIn.SignInException)enumerator.Current;
+                    Debug.LogError("Got Error: " + error.Status + " " + error.Message);
+                } else {
+                    Debug.LogWarning("Got Unexpected Exception?!?" + task.Exception);
+                }
+            }
+        } else if(task.IsCanceled) {
+            Debug.LogWarning("Canceled");
+        } else  {
+            Debug.Log("Welcome: " + task.Result.DisplayName + "!");
+            SignInWithGoogleInFirebase(task.Result.IdToken);
+        }
+    }
+
+    public void OnGoogleSignIn() {
+        GoogleSignIn.Configuration = configuration;
+        GoogleSignIn.Configuration.UseGameSignIn = false;
+        GoogleSignIn.Configuration.RequestIdToken = true;
+
+        GoogleSignIn.DefaultInstance.SignIn().ContinueWith(OnGoogleAuthenticationFinished);
+    }
+
+    public void OnGoogleSignInSilently() {
+        GoogleSignIn.Configuration = configuration;
+        GoogleSignIn.Configuration.UseGameSignIn = false;
+        GoogleSignIn.Configuration.RequestIdToken = true;
+
+        GoogleSignIn.DefaultInstance.SignInSilently().ContinueWith(OnGoogleAuthenticationFinished);
+    }
+
+    public void OnGoogleSignOut() {
+        GoogleSignIn.DefaultInstance.SignOut();
+    }
+
+    public void OnGoogleDisconnect() {
+      GoogleSignIn.DefaultInstance.Disconnect();
+    }
+
     private IEnumerator Register(string _email, string _password, string _username)
     {
+        GoogleSignIn.Configuration = configuration;
+        GoogleSignIn.Configuration.UseGameSignIn = true;
+        GoogleSignIn.Configuration.RequestIdToken = false;
         
         if(_username.Length >= maxUsernameLength){
             warningLoginText.text = "El nombre de usuario es demasiado largo\n";
@@ -240,15 +353,15 @@ public class MainMenuHandler : MonoBehaviour
             {
                 //User has now been created
                 //Now get the result
-                User = RegisterTask.Result;
+                user = RegisterTask.Result;
 
-                if (User != null)
+                if (user != null)
                 {
                     //Create a user profile and set the username
                     UserProfile profile = new UserProfile{DisplayName = _username};
 
                     //Call the Firebase auth update user profile function passing the profile with the username
-                    var ProfileTask = User.UpdateUserProfileAsync(profile);
+                    var ProfileTask = user.UpdateUserProfileAsync(profile);
                     //Wait until the task completes
                     yield return new WaitUntil(predicate: () => ProfileTask.IsCompleted);
 
@@ -372,5 +485,10 @@ public class MainMenuHandler : MonoBehaviour
     {
         yield return new WaitForSeconds(time);
         canSwapLoginMode = true;
+    }
+
+    void OnDestroy() {
+        auth.StateChanged -= AuthStateChanged;
+        auth = null;
     }
 }
