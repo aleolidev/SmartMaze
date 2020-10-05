@@ -65,6 +65,9 @@ public class LoadConnectHandler : MonoBehaviour
     public GameObject barFill;
     public GameObject barBorder;
 
+    [Header("Scripts")]
+    public TransitionHandler TransitionHndl;
+
     private float timer = 0f;
     private bool loadingScreenLoaded = false;
     public const int maxUsernameLength = 16;
@@ -618,6 +621,10 @@ public class LoadConnectHandler : MonoBehaviour
         auth = FirebaseAuth.DefaultInstance;
         auth.StateChanged += AuthStateChanged;
         AuthStateChanged(this, null);
+
+        if (auth.CurrentUser != null) {
+            StartCoroutine(TransitionHndl.LoadMainMenuFromLoading());
+        }
     }
 
     void AuthStateChanged(object sender, System.EventArgs eventArgs) {
@@ -629,6 +636,7 @@ public class LoadConnectHandler : MonoBehaviour
             user = auth.CurrentUser;
             if (signedIn) {
                 Debug.Log("Signed in " + user.DisplayName);
+                //StartCoroutine(TransitionHndl.LoadMainMenuFromLoading());
             }
         }
     }
@@ -664,7 +672,7 @@ public class LoadConnectHandler : MonoBehaviour
     }
 
     public void skipRegisterButton(){
-
+        StartCoroutine(TransitionHndl.LoadMainMenuFromLoading());
     }
 
     public void forgottenPasswordButton(){
@@ -770,6 +778,7 @@ public class LoadConnectHandler : MonoBehaviour
                 user = LoginTask.Result;
                 Debug.LogFormat("User signed in successfully: {0} ({1})", user.DisplayName, user.Email);
                 warningLoginText.text = "Inicio de sesión exitoso";
+                StartCoroutine(TransitionHndl.LoadMainMenuFromLoading());
             }
         }
 
@@ -791,6 +800,7 @@ public class LoadConnectHandler : MonoBehaviour
 
             Firebase.Auth.FirebaseUser newUser = task.Result;
             Debug.LogFormat("User signed in successfully: {0} ({1})", newUser.DisplayName, newUser.UserId);
+            StartCoroutine(TransitionHndl.LoadMainMenuFromLoading());
         });
     }
 
@@ -809,6 +819,7 @@ public class LoadConnectHandler : MonoBehaviour
         } else  {
             Debug.Log("Welcome: " + task.Result.DisplayName + "!");
             SignInWithGoogleInFirebase(task.Result.IdToken);
+            StartCoroutine(TransitionHndl.LoadMainMenuFromLoading());
         }
     }
 
@@ -916,6 +927,7 @@ public class LoadConnectHandler : MonoBehaviour
                         //Now return to login screen
                         //UIManager.instance.LoginScreen();
                         warningLoginText.text = "Registrado correctamente";
+                        StartCoroutine(TransitionHndl.LoadMainMenuFromLoading());
                         //warningUsernameText.text = "Logueado con éxito";
                     }
                 }
