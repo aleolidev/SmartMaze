@@ -90,7 +90,7 @@ public class LoadConnectHandler : MonoBehaviour
         loginBakground.GetComponent<Image>().color = new Color(loginBakground.GetComponent<Image>().color.r, loginBakground.GetComponent<Image>().color.g, loginBakground.GetComponent<Image>().color.b, 0f);
         HideAllSubElements(0f);
         Vector3 barFillPos = barFill.GetComponent<RectTransform>().localPosition;
-        DOTween.To(()=> barFill.GetComponent<RectTransform>().localPosition, x=>barFill.GetComponent<RectTransform>().localPosition = x, new Vector3(47.55f, barFillPos.y, barFillPos.z), 1f).SetEase(barMoving).SetLoops(-1, LoopType.Restart);
+        DOTween.To(()=> barFill.GetComponent<RectTransform>().localPosition, x=>barFill.GetComponent<RectTransform>().localPosition = x, new Vector3(38.1f, barFillPos.y, barFillPos.z), 1f).SetEase(barMoving).SetLoops(-1, LoopType.Restart);
         //StartCoroutine(loadInit());
     }
 
@@ -952,8 +952,10 @@ public class LoadConnectHandler : MonoBehaviour
     }
 
     void OnDestroy() {
-        auth.StateChanged -= AuthStateChanged;
-        auth = null;
+        if (auth.CurrentUser != null){
+            auth.StateChanged -= AuthStateChanged;
+            auth = null;
+        }
     }
 
     private bool checkInternetConnection(){
