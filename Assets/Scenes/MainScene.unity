@@ -916,6 +916,52 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1088414076
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1088414078}
+  - component: {fileID: 1088414077}
+  m_Layer: 0
+  m_Name: SwipeDetector
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1088414077
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1088414076}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5055ffccd0965fa4c86f5a6f5c1135d6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  detectAfterRelease: 1
+  scriptUI: {fileID: 1299306743}
+  minDistanceSwipe: 70
+--- !u!4 &1088414078
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1088414076}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 5
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1155701069
 GameObject:
   m_ObjectHideFlags: 0
@@ -5850,10 +5896,13 @@ MonoBehaviour:
   canvas: {fileID: 1902092926}
   background: {fileID: 2080002134}
   backgroundGradient: {fileID: 2100000, guid: a2987b4d08ba8e145acd1ca97abe9c42, type: 2}
+  sceneStat: 2
   levelsViewport: {fileID: 437510215}
   levelsGameObject: {fileID: 750286641}
   beforeLevelsGameObject: {fileID: 681988465}
   AfterLevelsGameObject: {fileID: 977247243}
+  scrollbar: {fileID: 166607804}
+  scrollList: {fileID: 2145907240}
   worldNameObject: {fileID: 620759236}
   amtOfLevels: 50
   comptdLevels: 12
@@ -5914,7 +5963,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 5
+  m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1341238944
 GameObject:

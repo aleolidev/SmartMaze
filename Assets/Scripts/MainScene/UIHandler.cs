@@ -12,12 +12,16 @@ public class UIHandler : MonoBehaviour
     [Header("Generic Objects")]
     public GameObject background;
     public Material backgroundGradient;
-
+    
+    [Header("Status")]
+    public SceneStatus sceneStat = SceneStatus.WorldLevelSelector;
     [Header("Select Level Menu")]
     public GameObject levelsViewport;
     public GameObject levelsGameObject;
     public GameObject beforeLevelsGameObject;
     public GameObject AfterLevelsGameObject;
+    public GameObject scrollbar;
+    public GameObject scrollList;
     public GameObject worldNameObject;
     public int amtOfLevels = 25;
     public int comptdLevels = 12;
@@ -82,22 +86,36 @@ public class UIHandler : MonoBehaviour
     private int totalWorlds = 7;
 
     private bool isActuallyMoving = true;
+    private bool isScrollbarNeeded = false;
     
     public enum Directions{
         LEFT = -1,
         RIGHT = 1
     };
 
+    public enum SceneStatus{
+        Disabled = 0,
+        InGame = 1,
+        WorldLevelSelector = 2
+    }
+
     void Start()
     {
         startWorldsMatrix();
         isActuallyMoving = false;
+
+        isScrollbarNeeded = isScrollingActive();
+        if(isScrollbarNeeded){
+            scrollList.GetComponent<ScrollRect>().movementType = ScrollRect.MovementType.Elastic;
+        } else {
+            scrollList.GetComponent<ScrollRect>().movementType = ScrollRect.MovementType.Clamped;
+        }
     }
 
     // Update is called once per frame
     void Update()
     {
-        
+        setScrollbarType();
     }
 
     IEnumerator instantiateWorldLevelMenu(GameObject goToModify, int worldToLoad , int amountOfLevels, int completedLevels){
@@ -109,13 +127,10 @@ public class UIHandler : MonoBehaviour
 
         if(worldToLoad >= 1 && worldToLoad < totalWorlds){
             avgColor = averageColorGradient(downWorldColor[worldToLoad - 1], upWorldColor[worldToLoad - 1]);
-            Debug.Log("Average de " + worldToLoad + " (if)");
         } else if (worldToLoad < 1){
             avgColor = averageColorGradient(downWorldColor[0], upWorldColor[0]);
-            Debug.Log("Average de " + 0 + " en worldToLoad " + worldToLoad + " (else if)");
         } else {
             avgColor = averageColorGradient(downWorldColor[totalWorlds - 1], upWorldColor[totalWorlds - 1]);
-            Debug.Log("Average de " + (totalWorlds-1).ToString() + " en worldToLoad " + worldToLoad + " (else)");
         }
         
         yield return new WaitForEndOfFrame();
@@ -227,22 +242,22 @@ public class UIHandler : MonoBehaviour
                 actualWorld--;
                 setArrowsAvailability();
                 StartCoroutine(fadeInformation());
-                displaceWorldMatrix(direction, 0.5f);
-                yield return new WaitForSeconds(0.51f);
+                displaceWorldMatrix(direction, 0.33f);
+                yield return new WaitForSecondsRealtime(0.34f);
                 StartCoroutine(resetWorldsMatrix());
             } else if (actualWorld < 1){
                 actualWorld = 1;
                 setArrowsAvailability();
                 StartCoroutine(fadeInformation());
-                displaceWorldMatrix(direction, 0.5f);
-                yield return new WaitForSeconds(0.51f);
+                displaceWorldMatrix(direction, 0.33f);
+                yield return new WaitForSecondsRealtime(0.34f);
                 StartCoroutine(resetWorldsMatrix());
             } else if (actualWorld > totalWorlds){
                 actualWorld = totalWorlds;
                 setArrowsAvailability();
                 StartCoroutine(fadeInformation());
-                displaceWorldMatrix(Directions.RIGHT, 0.5f);
-                yield return new WaitForSeconds(0.51f);
+                displaceWorldMatrix(Directions.RIGHT, 0.33f);
+                yield return new WaitForSecondsRealtime(0.34f);
                 StartCoroutine(resetWorldsMatrix());
             }
         } else if(direction == Directions.RIGHT){
@@ -250,27 +265,27 @@ public class UIHandler : MonoBehaviour
                 actualWorld++;
                 setArrowsAvailability();
                 StartCoroutine(fadeInformation());
-                displaceWorldMatrix(direction, 0.5f);
-                yield return new WaitForSeconds(0.51f);
+                displaceWorldMatrix(direction, 0.33f);
+                yield return new WaitForSecondsRealtime(0.34f);
                 StartCoroutine(resetWorldsMatrix());
             } else if (actualWorld < 1){
                 actualWorld = 1;
                 setArrowsAvailability();
                 StartCoroutine(fadeInformation());
-                displaceWorldMatrix(direction, 0.5f);
-                yield return new WaitForSeconds(0.51f);
+                displaceWorldMatrix(direction, 0.33f);
+                yield return new WaitForSecondsRealtime(0.34f);
                 StartCoroutine(resetWorldsMatrix());
             } else if (actualWorld > totalWorlds){
                 actualWorld = totalWorlds;
                 setArrowsAvailability();
                 StartCoroutine(fadeInformation());
-                displaceWorldMatrix(Directions.LEFT, 0.5f);
-                yield return new WaitForSeconds(0.51f);
+                displaceWorldMatrix(Directions.LEFT, 0.33f);
+                yield return new WaitForSecondsRealtime(0.34f);
                 StartCoroutine(resetWorldsMatrix());
             }
         }
 
-        yield return new WaitForSeconds(0.05f);
+        yield return new WaitForSecondsRealtime(0.05f);
 
         isActuallyMoving = false;
     }
@@ -339,15 +354,17 @@ public class UIHandler : MonoBehaviour
 
     IEnumerator resetWorldsMatrix(){
         //removeAllChildren(levelsGameObject);
+        levelsGameObject.transform.GetComponent<RectTransform>().anchoredPosition3D = new Vector3(0, 0, 0);
         StartCoroutine(instantiateWorldLevelMenu(levelsGameObject, actualWorld, amtOfLevels, comptdLevels));
-        yield return new WaitForSeconds(0.01f);
+        yield return new WaitForSecondsRealtime(0.01f);
         levelsGameObject.GetComponent<RectTransform>().anchorMin = new Vector2(0.5f, 1f);
         levelsGameObject.GetComponent<RectTransform>().anchorMax = new Vector2(0.5f, 1f);
-        yield return new WaitForSeconds(0.01f);
+        yield return new WaitForSecondsRealtime(0.01f);
         beforeLevelsGameObject.GetComponent<RectTransform>().anchorMin = new Vector2(-0.7f, 1f);
         beforeLevelsGameObject.GetComponent<RectTransform>().anchorMax = new Vector2(-0.7f, 1f);
         AfterLevelsGameObject.GetComponent<RectTransform>().anchorMin = new Vector2(1.7f, 1f);
         AfterLevelsGameObject.GetComponent<RectTransform>().anchorMax = new Vector2(1.7f, 1f);
+        yield return new WaitForSecondsRealtime(0.05f);
         StartCoroutine(instantiateWorldLevelMenu(beforeLevelsGameObject, actualWorld - 1, amtOfLevels, comptdLevels));
         StartCoroutine(instantiateWorldLevelMenu(AfterLevelsGameObject, actualWorld + 1, amtOfLevels, comptdLevels));
     }
@@ -355,8 +372,8 @@ public class UIHandler : MonoBehaviour
     IEnumerator fadeInformation(){
 
         //Fade bg color
-        DOTween.To(()=> backgroundGradient.GetColor("_Color"), x=> backgroundGradient.SetColor("_Color", x), downWorldColor[actualWorld - 1], 0.3f).SetEase(Ease.OutSine);
-        DOTween.To(()=> backgroundGradient.GetColor("_Color2"), x=> backgroundGradient.SetColor("_Color2", x), upWorldColor[actualWorld - 1], 0.3f).SetEase(Ease.OutSine);
+        DOTween.To(()=> backgroundGradient.GetColor("_Color"), x=> backgroundGradient.SetColor("_Color", x), downWorldColor[actualWorld - 1], 0.2f).SetEase(Ease.OutSine);
+        DOTween.To(()=> backgroundGradient.GetColor("_Color2"), x=> backgroundGradient.SetColor("_Color2", x), upWorldColor[actualWorld - 1], 0.2f).SetEase(Ease.OutSine);
         
         //Set Arrows Positions  
         DOTween.Kill("leftArrowAnimation");
@@ -371,10 +388,10 @@ public class UIHandler : MonoBehaviour
 
         //Set World Name
         Color worldNameColor = worldNameObject.GetComponent<TextMeshProUGUI>().color;
-        DOTween.To(()=> worldNameObject.GetComponent<TextMeshProUGUI>().color, x=>worldNameObject.GetComponent<TextMeshProUGUI>().color = x, new Color(worldNameColor.r, worldNameColor.g, worldNameColor.b, 0f), 0.08f).SetEase(Ease.OutQuad);
-        yield return new WaitForSeconds(0.08f);
+        DOTween.To(()=> worldNameObject.GetComponent<TextMeshProUGUI>().color, x=>worldNameObject.GetComponent<TextMeshProUGUI>().color = x, new Color(worldNameColor.r, worldNameColor.g, worldNameColor.b, 0f), 0.056f).SetEase(Ease.OutQuad);
+        yield return new WaitForSecondsRealtime(0.056f);
         worldNameObject.GetComponent<TextMeshProUGUI>().text = worldname[actualWorld - 1];
-        DOTween.To(()=> worldNameObject.GetComponent<TextMeshProUGUI>().color, x=>worldNameObject.GetComponent<TextMeshProUGUI>().color = x, new Color(worldNameColor.r, worldNameColor.g, worldNameColor.b, 1f), 0.08f).SetEase(Ease.OutQuad);
+        DOTween.To(()=> worldNameObject.GetComponent<TextMeshProUGUI>().color, x=>worldNameObject.GetComponent<TextMeshProUGUI>().color = x, new Color(worldNameColor.r, worldNameColor.g, worldNameColor.b, 1f), 0.056f).SetEase(Ease.OutQuad);
 
 
     }
@@ -399,6 +416,25 @@ public class UIHandler : MonoBehaviour
 
     Color averageColorGradient(Color color1, Color color2){
         return new Color((color1.r+color2.r)/2f, (color1.g+color2.g)/2f, (color1.b+color2.b)/2f, 1);
+    }
+
+    bool isScrollingActive(){
+        if(scrollbar.activeSelf){
+            return true;
+        } else{
+            return false;
+        }
+    }
+
+    void setScrollbarType(){
+        if(isScrollbarNeeded != isScrollingActive()){
+            isScrollbarNeeded = isScrollingActive();
+            if(isScrollbarNeeded){
+                scrollList.GetComponent<ScrollRect>().movementType = ScrollRect.MovementType.Elastic;
+            } else {
+                scrollList.GetComponent<ScrollRect>().movementType = ScrollRect.MovementType.Clamped;
+            }
+        }
     }
 
 }
