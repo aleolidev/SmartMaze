@@ -63,7 +63,7 @@ public class SceneManager : MonoBehaviour
         timer += Time.deltaTime;
 
         if(timer > (initAnim + totalAnimDuration)){
-            UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu", UnityEngine.SceneManagement.LoadSceneMode.Single);
+            UnityEngine.SceneManagement.SceneManager.LoadScene("MainScene", UnityEngine.SceneManagement.LoadSceneMode.Single);
         }
     }
 }
