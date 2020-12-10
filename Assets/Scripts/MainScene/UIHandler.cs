@@ -12,9 +12,19 @@ public class UIHandler : MonoBehaviour
     [Header("Generic Objects")]
     public GameObject background;
     public Material backgroundGradient;
+    public GameObject settingsGroup;
+    public GameObject levelsGroup;
+    public GameObject gameGroup;
+    public GameObject gameInterfaceGroup;
+    public MazeSystem mazeSys;
+    public GameObject darkmodeGO;
+    public GameObject darkmodeFill;
+    public GameObject darkmodeHandle;
     
     [Header("Status")]
-    public SceneStatus sceneStat = SceneStatus.WorldLevelSelector;
+    public SceneStatus sceneStat = SceneStatus.InGame;
+    public bool darkmode = false;
+    public float changeSceneDuration = 0.4f;
     [Header("Select Level Menu")]
     public GameObject levelsViewport;
     public GameObject levelsGameObject;
@@ -26,7 +36,8 @@ public class UIHandler : MonoBehaviour
     public int amtOfLevels = 25;
     public int comptdLevels = 12;
     public int levelsPerRow = 5;
-    public int actualWorld = 1;
+    public int actualWorld = 1; //Used for menu displacements
+    public int currentLevelWorld = 1; //Used for general purposes outside the levels menu
     [Header("Prefabs Level Frames")]
     public GameObject completedLevel;
     public GameObject availableLevel;
@@ -35,9 +46,13 @@ public class UIHandler : MonoBehaviour
     [Header("World Arrows")]
     public GameObject leftButton;
     public GameObject rightButton;
+    public GameObject moreLevelsIndicator;
     public GameObject leftArrow;
     public GameObject rightArrow;
+    public GameObject downArrow;
     public GameObject goBackArrow;
+
+    bool showMoreLevels = false;
 
     [Header("Worlds Information")]
     public string[] worldname = {
@@ -49,6 +64,8 @@ public class UIHandler : MonoBehaviour
         "Cosmos", // Azul Oscuro
         "Agujero Negro" // Violeta
     };
+
+    public Color darkmodeBGColor = new Color(0.165f, 0.165f, 0.165f, 1f);
 
     public Color[] upWorldColor = {
         new Color(0.149f, 0.45f, 0.623f, 1f), //Azul claro
@@ -96,11 +113,13 @@ public class UIHandler : MonoBehaviour
     public enum SceneStatus{
         Disabled = 0,
         InGame = 1,
-        WorldLevelSelector = 2
+        WorldLevelSelector = 2,
+        Settings = 3
     }
 
     void Start()
     {
+        darkmode = PlayerPrefs.GetInt("darkmode") > 0;
         startWorldsMatrix();
         isActuallyMoving = false;
 
@@ -110,12 +129,35 @@ public class UIHandler : MonoBehaviour
         } else {
             scrollList.GetComponent<ScrollRect>().movementType = ScrollRect.MovementType.Clamped;
         }
+
+        if(!darkmode){
+            darkmodeFill.GetComponent<RectTransform>().anchorMax = new Vector2(0f, 1f);
+            darkmodeFill.GetComponent<RectTransform>().offsetMax = new Vector2(0f, 0f);
+            darkmodeHandle.GetComponent<RectTransform>().anchorMin = new Vector2(0f, 0.5f);
+            darkmodeHandle.GetComponent<RectTransform>().anchorMax = new Vector2(0f, 0.5f);
+        } else {
+            darkmodeFill.GetComponent<RectTransform>().anchorMax = new Vector2(1f, 1f);
+            darkmodeFill.GetComponent<RectTransform>().offsetMax = new Vector2(-5f, 0f);
+            darkmodeHandle.GetComponent<RectTransform>().anchorMin = new Vector2(1f, 0.5f);
+            darkmodeHandle.GetComponent<RectTransform>().anchorMax = new Vector2(1f, 0.5f);
+        }
     }
 
     // Update is called once per frame
     void Update()
     {
         setScrollbarType();
+
+        //Mostrar/Ocultar flecha indicadora de más niveles
+        if(sceneStat == SceneStatus.WorldLevelSelector){
+            if(scrollList.GetComponent<ScrollRect>().verticalNormalizedPosition > 0.9f && !showMoreLevels){
+                showMoreLevels = true;
+                DOTween.To(()=> downArrow.GetComponent<Image>().color, x=>downArrow.GetComponent<Image>().color = x, new Color(1f, 1f, 1f, 1f), 0.35f).SetEase(Ease.InOutQuad);
+            } else if(scrollList.GetComponent<ScrollRect>().verticalNormalizedPosition <= 0.9f && showMoreLevels) {
+                showMoreLevels = false;
+                DOTween.To(()=> downArrow.GetComponent<Image>().color, x=>downArrow.GetComponent<Image>().color = x, new Color(1f, 1f, 1f, 0f), 0.35f).SetEase(Ease.InOutQuad);
+            }
+        }
     }
 
     IEnumerator instantiateWorldLevelMenu(GameObject goToModify, int worldToLoad , int amountOfLevels, int completedLevels){
@@ -219,6 +261,7 @@ public class UIHandler : MonoBehaviour
     void StartAnimations(){
         StartLeftArrowAnimation();
         StartRightArrowAnimation();
+        StartMoreLevelsIndicatorAnimation();
     }
 
     void StartLeftArrowAnimation(){
@@ -229,6 +272,11 @@ public class UIHandler : MonoBehaviour
     void StartRightArrowAnimation(){
         RectTransform rightRect = rightButton.GetComponent<RectTransform>();
         rightButton.GetComponent<RectTransform>().DOMoveX(rightRect.position.x + 0.015f, 0.6f).SetLoops(-1, LoopType.Yoyo).SetEase(Ease.InOutQuad).SetId("rightArrowAnimation");
+    }
+
+    void StartMoreLevelsIndicatorAnimation(){
+        RectTransform downRect = moreLevelsIndicator.GetComponent<RectTransform>();
+        moreLevelsIndicator.GetComponent<RectTransform>().DOMoveY(downRect.position.y - 0.03f, 0.6f).SetLoops(-1, LoopType.Yoyo).SetEase(Ease.InOutQuad).SetId("moreLevelsIndicatorAnimation");
     }
 
     void StartGoBackAnimation(){
@@ -378,6 +426,7 @@ public class UIHandler : MonoBehaviour
         //Set Arrows Positions  
         DOTween.Kill("leftArrowAnimation");
         DOTween.Kill("rightArrowAnimation");
+        DOTween.Kill("moreLevelsIndicatorAnimation");
         leftButton.GetComponent<RectTransform>().anchorMin = new Vector2(arrowWorldPositions[actualWorld - 1].x, leftButton.GetComponent<RectTransform>().anchorMin.y);
         leftButton.GetComponent<RectTransform>().anchorMax = new Vector2(arrowWorldPositions[actualWorld - 1].x, leftButton.GetComponent<RectTransform>().anchorMax.y);
         rightButton.GetComponent<RectTransform>().anchorMin = new Vector2(arrowWorldPositions[actualWorld - 1].y, rightButton.GetComponent<RectTransform>().anchorMin.y);
@@ -397,8 +446,17 @@ public class UIHandler : MonoBehaviour
     }
 
     void startWorldsMatrix(){
-        backgroundGradient.SetColor("_Color", downWorldColor[actualWorld - 1]);
-        backgroundGradient.SetColor("_Color2", upWorldColor[actualWorld - 1]);
+        mazeSys.addShades = false;
+        if(darkmode){
+            //mazeSys.addShades = true;
+            backgroundGradient.SetColor("_Color", darkmodeBGColor);
+            backgroundGradient.SetColor("_Color2", darkmodeBGColor);
+        } else {
+            //mazeSys.addShades = false;
+            backgroundGradient.SetColor("_Color", downWorldColor[actualWorld - 1]);
+            backgroundGradient.SetColor("_Color2", upWorldColor[actualWorld - 1]);
+        }
+        
         //background.GetComponent<Image>().color = worldcolor[actualWorld - 1];
         worldNameObject.GetComponent<TextMeshProUGUI>().text = worldname[actualWorld - 1];
         leftButton.GetComponent<RectTransform>().anchorMin = new Vector2(arrowWorldPositions[actualWorld - 1].x, leftButton.GetComponent<RectTransform>().anchorMin.y);
@@ -434,6 +492,192 @@ public class UIHandler : MonoBehaviour
             } else {
                 scrollList.GetComponent<ScrollRect>().movementType = ScrollRect.MovementType.Clamped;
             }
+        }
+    }
+
+    public void returnToGame(){
+        if(sceneStat == SceneStatus.Settings || sceneStat == SceneStatus.WorldLevelSelector){
+            goBackArrow.GetComponent<RectTransform>().localScale = new Vector3(1f, 1f, 1f);
+            goBackArrow.GetComponent<Image>().color = new Color(1f, 1f, 1f, 1f);
+            DOTween.To(()=> goBackArrow.GetComponent<RectTransform>().localScale, x=>goBackArrow.GetComponent<RectTransform>().localScale = x, new Vector3(0.95f, 0.95f, 1f), changeSceneDuration).SetEase(Ease.OutCubic);
+            DOTween.To(()=> goBackArrow.GetComponent<Image>().color, x=>goBackArrow.GetComponent<Image>().color = x, new Color(1f, 1f, 1f, 0f), changeSceneDuration).SetEase(Ease.OutCubic).OnComplete(() => {
+                goBackArrow.SetActive(false);
+            });
+
+            switch(sceneStat){
+                case SceneStatus.Settings:
+                    settingsGroup.GetComponent<RectTransform>().localScale = new Vector3(1f, 1f, 1f);
+                    settingsGroup.GetComponent<CanvasGroup>().alpha = 1f;
+                    StartCoroutine(showGame());
+                    DOTween.To(()=> settingsGroup.GetComponent<RectTransform>().localScale, x=>settingsGroup.GetComponent<RectTransform>().localScale = x, new Vector3(1.05f, 1.05f, 1f), changeSceneDuration).SetEase(Ease.OutCubic);
+                    DOTween.To(()=> settingsGroup.GetComponent<CanvasGroup>().alpha, x=>settingsGroup.GetComponent<CanvasGroup>().alpha = x, 0f, changeSceneDuration).SetEase(Ease.OutCubic).OnComplete(() => { 
+                       settingsGroup.SetActive(false);
+                    });
+                break;
+                case SceneStatus.WorldLevelSelector:
+                    actualWorld = currentLevelWorld;
+
+                    levelsGroup.GetComponent<RectTransform>().localScale = new Vector3(1f, 1f, 1f);
+                    levelsGroup.GetComponent<CanvasGroup>().alpha = 1f;
+                    StartCoroutine(showGame());
+
+                    if(darkmode){
+                        DOTween.To(()=> backgroundGradient.GetColor("_Color"), x=> backgroundGradient.SetColor("_Color", x), darkmodeBGColor, 0.2f).SetEase(Ease.OutSine);
+                        DOTween.To(()=> backgroundGradient.GetColor("_Color2"), x=> backgroundGradient.SetColor("_Color2", x), darkmodeBGColor, 0.2f).SetEase(Ease.OutSine);
+                    } else {
+                        DOTween.To(()=> backgroundGradient.GetColor("_Color"), x=> backgroundGradient.SetColor("_Color", x), downWorldColor[actualWorld - 1], 0.2f).SetEase(Ease.OutSine);
+                        DOTween.To(()=> backgroundGradient.GetColor("_Color2"), x=> backgroundGradient.SetColor("_Color2", x), upWorldColor[actualWorld - 1], 0.2f).SetEase(Ease.OutSine);
+                    }
+
+                    DOTween.To(()=> levelsGroup.GetComponent<RectTransform>().localScale, x=>levelsGroup.GetComponent<RectTransform>().localScale = x, new Vector3(1.05f, 1.05f, 1f), changeSceneDuration).SetEase(Ease.OutCubic);
+                    DOTween.To(()=> levelsGroup.GetComponent<CanvasGroup>().alpha, x=>levelsGroup.GetComponent<CanvasGroup>().alpha = x, 0f, changeSceneDuration).SetEase(Ease.OutCubic).OnComplete(() => { 
+                        levelsGroup.SetActive(false);
+                    });
+                break;
+            }
+        }
+    }
+
+    public void openSettings(){
+        if(sceneStat == SceneStatus.InGame){
+            gameGroup.GetComponent<RectTransform>().localScale = new Vector3(1f, 1f, 1f);
+            gameGroup.GetComponent<CanvasGroup>().alpha = 1f;
+            gameInterfaceGroup.GetComponent<RectTransform>().localScale = new Vector3(1f, 1f, 1f);
+            gameInterfaceGroup.GetComponent<CanvasGroup>().alpha = 1f;
+            
+            StartCoroutine(showSettings());
+
+            DOTween.To(()=> gameGroup.GetComponent<RectTransform>().localScale, x=>gameGroup.GetComponent<RectTransform>().localScale = x, new Vector3(1.05f, 1.05f, 1f), changeSceneDuration).SetEase(Ease.OutCubic);
+            DOTween.To(()=> gameGroup.GetComponent<CanvasGroup>().alpha, x=>gameGroup.GetComponent<CanvasGroup>().alpha = x, 0f, changeSceneDuration).SetEase(Ease.OutCubic).OnComplete(() => { 
+                gameGroup.SetActive(false);
+            });
+            DOTween.To(()=> gameInterfaceGroup.GetComponent<RectTransform>().localScale, x=>gameInterfaceGroup.GetComponent<RectTransform>().localScale = x, new Vector3(1.05f, 1.05f, 1f), changeSceneDuration).SetEase(Ease.OutCubic);
+            DOTween.To(()=> gameInterfaceGroup.GetComponent<CanvasGroup>().alpha, x=>gameInterfaceGroup.GetComponent<CanvasGroup>().alpha = x, 0f, changeSceneDuration).SetEase(Ease.OutCubic).OnComplete(() => { 
+                gameInterfaceGroup.SetActive(false);
+            });
+        }
+    }
+
+    public void openLevels(){
+        if(sceneStat == SceneStatus.InGame){
+            currentLevelWorld = actualWorld;
+            worldNameObject.GetComponent<TextMeshProUGUI>().text = worldname[actualWorld - 1];
+            StartCoroutine(resetWorldsMatrix());
+
+            gameGroup.GetComponent<RectTransform>().localScale = new Vector3(1f, 1f, 1f);
+            gameGroup.GetComponent<CanvasGroup>().alpha = 1f;
+            gameInterfaceGroup.GetComponent<RectTransform>().localScale = new Vector3(1f, 1f, 1f);
+            gameInterfaceGroup.GetComponent<CanvasGroup>().alpha = 1f;
+            
+            StartCoroutine(showLevels());
+
+            DOTween.To(()=> backgroundGradient.GetColor("_Color"), x=> backgroundGradient.SetColor("_Color", x), downWorldColor[actualWorld - 1], 0.2f).SetEase(Ease.OutSine);
+            DOTween.To(()=> backgroundGradient.GetColor("_Color2"), x=> backgroundGradient.SetColor("_Color2", x), upWorldColor[actualWorld - 1], 0.2f).SetEase(Ease.OutSine);
+
+            DOTween.To(()=> gameGroup.GetComponent<RectTransform>().localScale, x=>gameGroup.GetComponent<RectTransform>().localScale = x, new Vector3(1.05f, 1.05f, 1f), changeSceneDuration).SetEase(Ease.OutCubic);
+            DOTween.To(()=> gameGroup.GetComponent<CanvasGroup>().alpha, x=>gameGroup.GetComponent<CanvasGroup>().alpha = x, 0f, changeSceneDuration).SetEase(Ease.OutCubic).OnComplete(() => { 
+                gameGroup.SetActive(false);
+            });
+            DOTween.To(()=> gameInterfaceGroup.GetComponent<RectTransform>().localScale, x=>gameInterfaceGroup.GetComponent<RectTransform>().localScale = x, new Vector3(1.05f, 1.05f, 1f), changeSceneDuration).SetEase(Ease.OutCubic);
+            DOTween.To(()=> gameInterfaceGroup.GetComponent<CanvasGroup>().alpha, x=>gameInterfaceGroup.GetComponent<CanvasGroup>().alpha = x, 0f, changeSceneDuration).SetEase(Ease.OutCubic).OnComplete(() => { 
+                gameInterfaceGroup.SetActive(false);
+            });
+        }
+    }
+
+    IEnumerator showGame(){
+
+        yield return new WaitForSeconds(changeSceneDuration/2f);
+
+        sceneStat = SceneStatus.InGame;
+
+        gameGroup.GetComponent<RectTransform>().localScale = new Vector3(1.05f, 1.05f, 1f);
+        gameGroup.GetComponent<CanvasGroup>().alpha = 0f;
+        gameInterfaceGroup.GetComponent<RectTransform>().localScale = new Vector3(1.05f, 1.05f, 1f);
+        gameInterfaceGroup.GetComponent<CanvasGroup>().alpha = 0f;
+        gameGroup.SetActive(true);
+        gameInterfaceGroup.SetActive(true);
+
+        DOTween.To(()=> gameGroup.GetComponent<RectTransform>().localScale, x=>gameGroup.GetComponent<RectTransform>().localScale = x, new Vector3(1f, 1f, 1f), changeSceneDuration).SetEase(Ease.OutCubic);
+        DOTween.To(()=> gameGroup.GetComponent<CanvasGroup>().alpha, x=>gameGroup.GetComponent<CanvasGroup>().alpha = x, 1f, changeSceneDuration).SetEase(Ease.OutCubic);
+        DOTween.To(()=> gameInterfaceGroup.GetComponent<RectTransform>().localScale, x=>gameInterfaceGroup.GetComponent<RectTransform>().localScale = x, new Vector3(1f, 1f, 1f), changeSceneDuration).SetEase(Ease.OutCubic);
+        DOTween.To(()=> gameInterfaceGroup.GetComponent<CanvasGroup>().alpha, x=>gameInterfaceGroup.GetComponent<CanvasGroup>().alpha = x, 1f, changeSceneDuration).SetEase(Ease.OutCubic);
+    }
+
+    IEnumerator showLevels(){
+
+        yield return new WaitForSeconds(changeSceneDuration/2f);
+
+        sceneStat = SceneStatus.WorldLevelSelector;
+        
+        levelsGroup.GetComponent<RectTransform>().localScale = new Vector3(1.05f, 1.05f, 1f);
+        levelsGroup.GetComponent<CanvasGroup>().alpha = 0f;
+        goBackArrow.GetComponent<RectTransform>().localScale = new Vector3(0.95f, 0.95f, 1f);
+        goBackArrow.GetComponent<Image>().color = new Color(1f, 1f, 1f, 1f);
+        levelsGroup.SetActive(true);
+        goBackArrow.SetActive(true);
+
+        DOTween.To(()=> goBackArrow.GetComponent<RectTransform>().localScale, x=>goBackArrow.GetComponent<RectTransform>().localScale = x, new Vector3(1f, 1f, 1f), changeSceneDuration).SetEase(Ease.OutCubic);
+        DOTween.To(()=> goBackArrow.GetComponent<Image>().color, x=>goBackArrow.GetComponent<Image>().color = x, new Color(1f, 1f, 1f, 1f), changeSceneDuration).SetEase(Ease.OutCubic);
+
+        DOTween.To(()=> levelsGroup.GetComponent<RectTransform>().localScale, x=>levelsGroup.GetComponent<RectTransform>().localScale = x, new Vector3(1f, 1f, 1f), changeSceneDuration).SetEase(Ease.OutCubic);
+        DOTween.To(()=> levelsGroup.GetComponent<CanvasGroup>().alpha, x=>levelsGroup.GetComponent<CanvasGroup>().alpha = x, 1f, changeSceneDuration).SetEase(Ease.OutCubic);
+    }
+
+    IEnumerator showSettings(){
+
+        yield return new WaitForSeconds(changeSceneDuration/2f);
+
+        sceneStat = SceneStatus.Settings;
+        
+        settingsGroup.GetComponent<RectTransform>().localScale = new Vector3(1.05f, 1.05f, 1f);
+        settingsGroup.GetComponent<CanvasGroup>().alpha = 0f;
+        goBackArrow.GetComponent<RectTransform>().localScale = new Vector3(0.95f, 0.95f, 1f);
+        goBackArrow.GetComponent<Image>().color = new Color(1f, 1f, 1f, 1f);
+        settingsGroup.SetActive(true);
+        goBackArrow.SetActive(true);
+
+        DOTween.To(()=> goBackArrow.GetComponent<RectTransform>().localScale, x=>goBackArrow.GetComponent<RectTransform>().localScale = x, new Vector3(1f, 1f, 1f), changeSceneDuration).SetEase(Ease.OutCubic);
+        DOTween.To(()=> goBackArrow.GetComponent<Image>().color, x=>goBackArrow.GetComponent<Image>().color = x, new Color(1f, 1f, 1f, 1f), changeSceneDuration).SetEase(Ease.OutCubic);
+
+        DOTween.To(()=> settingsGroup.GetComponent<RectTransform>().localScale, x=>settingsGroup.GetComponent<RectTransform>().localScale = x, new Vector3(1f, 1f, 1f), changeSceneDuration).SetEase(Ease.OutCubic);
+        DOTween.To(()=> settingsGroup.GetComponent<CanvasGroup>().alpha, x=>settingsGroup.GetComponent<CanvasGroup>().alpha = x, 1f, changeSceneDuration).SetEase(Ease.OutCubic);
+    }
+
+    public void switchDarkmode(){
+        if(darkmode){
+            darkmode = false;
+            PlayerPrefs.SetInt("darkmode", 0);
+            DOTween.To(()=> darkmodeFill.GetComponent<RectTransform>().anchorMax, x=>darkmodeFill.GetComponent<RectTransform>().anchorMax = x, new Vector2(0f, 1f), 0.2f).SetEase(Ease.OutCubic);
+            DOTween.To(()=> darkmodeFill.GetComponent<RectTransform>().offsetMax, x=>darkmodeFill.GetComponent<RectTransform>().offsetMax = x, new Vector2(0f, 0f), 0.2f).SetEase(Ease.OutCubic);
+            
+            DOTween.To(()=> darkmodeHandle.GetComponent<RectTransform>().anchorMin, x=>darkmodeHandle.GetComponent<RectTransform>().anchorMin = x, new Vector2(0f, 0.5f), 0.2f).SetEase(Ease.OutCubic);
+            DOTween.To(()=> darkmodeHandle.GetComponent<RectTransform>().anchorMax, x=>darkmodeHandle.GetComponent<RectTransform>().anchorMax = x, new Vector2(0f, 0.5f), 0.2f).SetEase(Ease.OutCubic);
+            //DOTween.To(()=> darkmodeGO.GetComponent<RectTransform>().Find("Handle").GetComponent<RectTransform>().localPosition, x=>darkmodeGO.GetComponent<RectTransform>().Find("Handle").GetComponent<RectTransform>().localPosition = x, new Vector3(0f, 0f, 0f), 0.2f).SetEase(Ease.OutCubic);
+            
+        } else {
+            darkmode = true;
+
+            PlayerPrefs.SetInt("darkmode", 1);
+            DOTween.To(()=> darkmodeFill.GetComponent<RectTransform>().anchorMax, x=>darkmodeFill.GetComponent<RectTransform>().anchorMax = x, new Vector2(1f, 1f), 0.2f).SetEase(Ease.OutCubic);
+            DOTween.To(()=> darkmodeFill.GetComponent<RectTransform>().offsetMax, x=>darkmodeFill.GetComponent<RectTransform>().offsetMax = x, new Vector2(-5f, 0f), 0.2f).SetEase(Ease.OutCubic);
+            
+            DOTween.To(()=> darkmodeHandle.GetComponent<RectTransform>().anchorMin, x=>darkmodeHandle.GetComponent<RectTransform>().anchorMin = x, new Vector2(1f, 0.5f), 0.2f).SetEase(Ease.OutCubic);
+            DOTween.To(()=> darkmodeHandle.GetComponent<RectTransform>().anchorMax, x=>darkmodeHandle.GetComponent<RectTransform>().anchorMax = x, new Vector2(1f, 0.5f), 0.2f).SetEase(Ease.OutCubic);
+            //DOTween.To(()=> darkmodeGO.GetComponent<RectTransform>().Find("Handle").GetComponent<RectTransform>().localPosition, x=>darkmodeGO.GetComponent<RectTransform>().Find("Handle").GetComponent<RectTransform>().localPosition = x, new Vector3(0f, 0f, 0f), 0.2f).SetEase(Ease.OutCubic);
+        }
+
+        PlayerPrefs.Save();
+        mazeSys.switchMazeColorMode();
+    }
+
+    public void switchBGState(){
+        if(darkmode){
+            DOTween.To(()=> backgroundGradient.GetColor("_Color"), x=> backgroundGradient.SetColor("_Color", x), darkmodeBGColor, 0.2f).SetEase(Ease.OutSine);
+            DOTween.To(()=> backgroundGradient.GetColor("_Color2"), x=> backgroundGradient.SetColor("_Color2", x), darkmodeBGColor, 0.2f).SetEase(Ease.OutSine);
+        } else {
+            DOTween.To(()=> backgroundGradient.GetColor("_Color"), x=> backgroundGradient.SetColor("_Color", x), downWorldColor[actualWorld - 1], 0.2f).SetEase(Ease.OutSine);
+            DOTween.To(()=> backgroundGradient.GetColor("_Color2"), x=> backgroundGradient.SetColor("_Color2", x), upWorldColor[actualWorld - 1], 0.2f).SetEase(Ease.OutSine);
         }
     }
 
