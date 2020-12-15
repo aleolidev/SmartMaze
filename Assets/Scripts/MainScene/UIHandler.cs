@@ -14,6 +14,7 @@ public class UIHandler : MonoBehaviour
     public Material backgroundGradient;
     public GameObject settingsGroup;
     public GameObject levelsGroup;
+    public GameObject levelsGUIGO;
     public GameObject gameGroup;
     public GameObject gameInterfaceGroup;
     public MazeSystem mazeSys;
@@ -28,6 +29,7 @@ public class UIHandler : MonoBehaviour
     [Header("Select Level Menu")]
     public GameObject levelsViewport;
     public GameObject levelsGameObject;
+    public GameObject currentLevelGO;
     public GameObject beforeLevelsGameObject;
     public GameObject AfterLevelsGameObject;
     public GameObject scrollbar;
@@ -53,6 +55,8 @@ public class UIHandler : MonoBehaviour
     public GameObject goBackArrow;
 
     bool showMoreLevels = false;
+
+    private int worldInstantiations = 0;
 
     [Header("Worlds Information")]
     public string[] worldname = {
@@ -240,6 +244,10 @@ public class UIHandler : MonoBehaviour
                 }
                 addedBoxes++;
             }
+        }
+
+        if(worldInstantiations < 3){
+            worldInstantiations++;
         }
 
     }
@@ -457,19 +465,15 @@ public class UIHandler : MonoBehaviour
             backgroundGradient.SetColor("_Color2", upWorldColor[actualWorld - 1]);
         }
         
+
         //background.GetComponent<Image>().color = worldcolor[actualWorld - 1];
         worldNameObject.GetComponent<TextMeshProUGUI>().text = worldname[actualWorld - 1];
-        leftButton.GetComponent<RectTransform>().anchorMin = new Vector2(arrowWorldPositions[actualWorld - 1].x, leftButton.GetComponent<RectTransform>().anchorMin.y);
-        leftButton.GetComponent<RectTransform>().anchorMax = new Vector2(arrowWorldPositions[actualWorld - 1].x, leftButton.GetComponent<RectTransform>().anchorMax.y);
-        rightButton.GetComponent<RectTransform>().anchorMin = new Vector2(arrowWorldPositions[actualWorld - 1].y, rightButton.GetComponent<RectTransform>().anchorMin.y);
-        rightButton.GetComponent<RectTransform>().anchorMax = new Vector2(arrowWorldPositions[actualWorld - 1].y, rightButton.GetComponent<RectTransform>().anchorMax.y);
 
         setArrowsAvailability();
         StartCoroutine(instantiateWorldLevelMenu(levelsGameObject, actualWorld, amtOfLevels, comptdLevels));
         StartCoroutine(instantiateWorldLevelMenu(beforeLevelsGameObject, actualWorld - 1, amtOfLevels, comptdLevels));
         StartCoroutine(instantiateWorldLevelMenu(AfterLevelsGameObject, actualWorld + 1, amtOfLevels, comptdLevels));
-        StartAnimations();
-        StartGoBackAnimation();
+        StartCoroutine(finishWorldSelectorInitialization());
     }
 
     Color averageColorGradient(Color color1, Color color2){
@@ -535,14 +539,19 @@ public class UIHandler : MonoBehaviour
                     });
                 break;
             }
+        } else if(sceneStat == SceneStatus.InGame) {
+            levelsGroup.GetComponent<RectTransform>().localScale = new Vector3(1f, 1f, 1f);
+            levelsGroup.GetComponent<CanvasGroup>().alpha = 1f;
         }
     }
 
     public void openSettings(){
         if(sceneStat == SceneStatus.InGame){
+            mazeSys.hideUnseenSlabs();
+
             gameGroup.GetComponent<RectTransform>().localScale = new Vector3(1f, 1f, 1f);
             gameGroup.GetComponent<CanvasGroup>().alpha = 1f;
-            gameInterfaceGroup.GetComponent<RectTransform>().localScale = new Vector3(1f, 1f, 1f);
+            //gameInterfaceGroup.GetComponent<RectTransform>().localScale = new Vector3(1f, 1f, 1f);
             gameInterfaceGroup.GetComponent<CanvasGroup>().alpha = 1f;
             
             StartCoroutine(showSettings());
@@ -551,7 +560,7 @@ public class UIHandler : MonoBehaviour
             DOTween.To(()=> gameGroup.GetComponent<CanvasGroup>().alpha, x=>gameGroup.GetComponent<CanvasGroup>().alpha = x, 0f, changeSceneDuration).SetEase(Ease.OutCubic).OnComplete(() => { 
                 gameGroup.SetActive(false);
             });
-            DOTween.To(()=> gameInterfaceGroup.GetComponent<RectTransform>().localScale, x=>gameInterfaceGroup.GetComponent<RectTransform>().localScale = x, new Vector3(1.05f, 1.05f, 1f), changeSceneDuration).SetEase(Ease.OutCubic);
+            //DOTween.To(()=> gameInterfaceGroup.GetComponent<RectTransform>().localScale, x=>gameInterfaceGroup.GetComponent<RectTransform>().localScale = x, new Vector3(1.05f, 1.05f, 1f), changeSceneDuration).SetEase(Ease.OutCubic);
             DOTween.To(()=> gameInterfaceGroup.GetComponent<CanvasGroup>().alpha, x=>gameInterfaceGroup.GetComponent<CanvasGroup>().alpha = x, 0f, changeSceneDuration).SetEase(Ease.OutCubic).OnComplete(() => { 
                 gameInterfaceGroup.SetActive(false);
             });
@@ -560,13 +569,15 @@ public class UIHandler : MonoBehaviour
 
     public void openLevels(){
         if(sceneStat == SceneStatus.InGame){
+            mazeSys.hideUnseenSlabs();
+
             currentLevelWorld = actualWorld;
             worldNameObject.GetComponent<TextMeshProUGUI>().text = worldname[actualWorld - 1];
             StartCoroutine(resetWorldsMatrix());
 
             gameGroup.GetComponent<RectTransform>().localScale = new Vector3(1f, 1f, 1f);
             gameGroup.GetComponent<CanvasGroup>().alpha = 1f;
-            gameInterfaceGroup.GetComponent<RectTransform>().localScale = new Vector3(1f, 1f, 1f);
+            //gameInterfaceGroup.GetComponent<RectTransform>().localScale = new Vector3(1f, 1f, 1f);
             gameInterfaceGroup.GetComponent<CanvasGroup>().alpha = 1f;
             
             StartCoroutine(showLevels());
@@ -578,11 +589,24 @@ public class UIHandler : MonoBehaviour
             DOTween.To(()=> gameGroup.GetComponent<CanvasGroup>().alpha, x=>gameGroup.GetComponent<CanvasGroup>().alpha = x, 0f, changeSceneDuration).SetEase(Ease.OutCubic).OnComplete(() => { 
                 gameGroup.SetActive(false);
             });
-            DOTween.To(()=> gameInterfaceGroup.GetComponent<RectTransform>().localScale, x=>gameInterfaceGroup.GetComponent<RectTransform>().localScale = x, new Vector3(1.05f, 1.05f, 1f), changeSceneDuration).SetEase(Ease.OutCubic);
+            //DOTween.To(()=> gameInterfaceGroup.GetComponent<RectTransform>().localScale, x=>gameInterfaceGroup.GetComponent<RectTransform>().localScale = x, new Vector3(1.05f, 1.05f, 1f), changeSceneDuration).SetEase(Ease.OutCubic);
             DOTween.To(()=> gameInterfaceGroup.GetComponent<CanvasGroup>().alpha, x=>gameInterfaceGroup.GetComponent<CanvasGroup>().alpha = x, 0f, changeSceneDuration).SetEase(Ease.OutCubic).OnComplete(() => { 
                 gameInterfaceGroup.SetActive(false);
             });
         }
+    }
+
+    public void hideMazeCompleted(){
+        mazeSys.hideUnseenSlabs();
+        DOTween.To(()=> gameGroup.GetComponent<RectTransform>().localScale, x=>gameGroup.GetComponent<RectTransform>().localScale = x, new Vector3(1.05f, 1.05f, 1f), 3f*changeSceneDuration/4f).SetEase(Ease.OutCubic);
+        DOTween.To(()=> gameGroup.GetComponent<CanvasGroup>().alpha, x=>gameGroup.GetComponent<CanvasGroup>().alpha = x, 0f, 3f*changeSceneDuration/4f).SetEase(Ease.InCubic).OnComplete(() => {
+            mazeSys.generateNewLevelOnComplete();
+        });
+    }
+
+    public void showGameOnCreateNewLevel(){
+        DOTween.To(()=> gameGroup.GetComponent<RectTransform>().localScale, x=>gameGroup.GetComponent<RectTransform>().localScale = x, new Vector3(1f, 1f, 1f), 3f*changeSceneDuration/4f).SetEase(Ease.InCubic);
+        DOTween.To(()=> gameGroup.GetComponent<CanvasGroup>().alpha, x=>gameGroup.GetComponent<CanvasGroup>().alpha = x, 1f, 3f*changeSceneDuration/4f).SetEase(Ease.OutCubic);
     }
 
     IEnumerator showGame(){
@@ -593,15 +617,18 @@ public class UIHandler : MonoBehaviour
 
         gameGroup.GetComponent<RectTransform>().localScale = new Vector3(1.05f, 1.05f, 1f);
         gameGroup.GetComponent<CanvasGroup>().alpha = 0f;
-        gameInterfaceGroup.GetComponent<RectTransform>().localScale = new Vector3(1.05f, 1.05f, 1f);
+        //gameInterfaceGroup.GetComponent<RectTransform>().localScale = new Vector3(1.05f, 1.05f, 1f);
         gameInterfaceGroup.GetComponent<CanvasGroup>().alpha = 0f;
         gameGroup.SetActive(true);
+        mazeSys.showSeenSlabs();
         gameInterfaceGroup.SetActive(true);
 
         DOTween.To(()=> gameGroup.GetComponent<RectTransform>().localScale, x=>gameGroup.GetComponent<RectTransform>().localScale = x, new Vector3(1f, 1f, 1f), changeSceneDuration).SetEase(Ease.OutCubic);
         DOTween.To(()=> gameGroup.GetComponent<CanvasGroup>().alpha, x=>gameGroup.GetComponent<CanvasGroup>().alpha = x, 1f, changeSceneDuration).SetEase(Ease.OutCubic);
-        DOTween.To(()=> gameInterfaceGroup.GetComponent<RectTransform>().localScale, x=>gameInterfaceGroup.GetComponent<RectTransform>().localScale = x, new Vector3(1f, 1f, 1f), changeSceneDuration).SetEase(Ease.OutCubic);
-        DOTween.To(()=> gameInterfaceGroup.GetComponent<CanvasGroup>().alpha, x=>gameInterfaceGroup.GetComponent<CanvasGroup>().alpha = x, 1f, changeSceneDuration).SetEase(Ease.OutCubic);
+        //DOTween.To(()=> gameInterfaceGroup.GetComponent<RectTransform>().localScale, x=>gameInterfaceGroup.GetComponent<RectTransform>().localScale = x, new Vector3(1f, 1f, 1f), changeSceneDuration).SetEase(Ease.OutCubic);
+        DOTween.To(()=> gameInterfaceGroup.GetComponent<CanvasGroup>().alpha, x=>gameInterfaceGroup.GetComponent<CanvasGroup>().alpha = x, 1f, changeSceneDuration).SetEase(Ease.OutCubic).OnComplete(() =>{
+            mazeSys.showAllSlabs();
+        });
     }
 
     IEnumerator showLevels(){
@@ -679,6 +706,50 @@ public class UIHandler : MonoBehaviour
             DOTween.To(()=> backgroundGradient.GetColor("_Color"), x=> backgroundGradient.SetColor("_Color", x), downWorldColor[actualWorld - 1], 0.2f).SetEase(Ease.OutSine);
             DOTween.To(()=> backgroundGradient.GetColor("_Color2"), x=> backgroundGradient.SetColor("_Color2", x), upWorldColor[actualWorld - 1], 0.2f).SetEase(Ease.OutSine);
         }
+    }
+
+    public void setLevelName(){
+        currentLevelGO.GetComponent<TextMeshProUGUI>().text = "Nivel " + PlayerPrefs.GetInt("completedLevels").ToString();
+    }
+
+    public void animateReloadButton(GameObject r){
+        Quaternion rQ = r.GetComponent<RectTransform>().localRotation;
+        r.GetComponent<RectTransform>().DORotate(new Vector3(0f, 0f, -360f), 0.35f, RotateMode.FastBeyond360).SetEase(Ease.InOutQuad);
+    }
+
+    public void animateButton(GameObject go){
+        DOTween.To(()=> go.GetComponent<RectTransform>().localScale, x=>go.GetComponent<RectTransform>().localScale = x, new Vector3(0.9f, 0.9f, 1f), changeSceneDuration/1.5f).SetEase(Ease.OutCirc).OnComplete(() =>{
+            go.GetComponent<RectTransform>().localScale = new Vector3(1f, 1f, 1f);
+        });
+    }
+
+    private void resetScale(GameObject go){
+        DOTween.To(()=> go.GetComponent<RectTransform>().localScale, x=>go.GetComponent<RectTransform>().localScale = x, new Vector3(1, 1, 1f), 0.05f).SetEase(Ease.OutExpo);
+    }
+
+    IEnumerator finishWorldSelectorInitialization(){
+        while(worldInstantiations < 3){
+            yield return null;
+        } 
+
+        RectTransform lvlVwprtRT = levelsViewport.GetComponent<RectTransform>();
+        GameObject lvlBox = levelsViewport.transform.parent.parent.gameObject;
+        float topMargin = -Mathf.Abs((levelsViewport.transform.parent.parent.gameObject.GetComponent<RectTransform>().rect.width - lvlVwprtRT.rect.width)/2f) - 4;
+        float verticalViewportPixelSize = Mathf.Abs(topMargin) + levelsGameObject.GetComponent<GridLayoutGroup>().cellSize.y*6f + levelsGameObject.GetComponent<GridLayoutGroup>().spacing.y*6.5f;
+        float verticalViewportSize = verticalViewportPixelSize/mazeSys.getCanvasHeight();
+        lvlBox.GetComponent<RectTransform>().anchorMax = new Vector2(0.945f, 0.5f + verticalViewportSize/2f);
+        lvlBox.GetComponent<RectTransform>().anchorMin = new Vector2(0.055f, 0.5f - verticalViewportSize/2f);
+        
+        worldNameObject.GetComponent<RectTransform>().anchorMin = new Vector2(0.5f, 0.54f + verticalViewportSize/2f);
+        worldNameObject.GetComponent<RectTransform>().anchorMax = new Vector2(0.5f, 0.54f + verticalViewportSize/2f);
+        leftButton.GetComponent<RectTransform>().anchorMin = new Vector2(arrowWorldPositions[actualWorld - 1].x, 0.54f + verticalViewportSize/2f);
+        leftButton.GetComponent<RectTransform>().anchorMax = new Vector2(arrowWorldPositions[actualWorld - 1].x, 0.54f + verticalViewportSize/2f);
+        rightButton.GetComponent<RectTransform>().anchorMin = new Vector2(arrowWorldPositions[actualWorld - 1].y, 0.54f + verticalViewportSize/2f);
+        rightButton.GetComponent<RectTransform>().anchorMax = new Vector2(arrowWorldPositions[actualWorld - 1].y, 0.54f + verticalViewportSize/2f);
+
+        levelsViewport.GetComponent<RectTransform>().offsetMax = new Vector2(lvlVwprtRT.offsetMax.x, topMargin);
+        StartAnimations();
+        StartGoBackAnimation();
     }
 
 }

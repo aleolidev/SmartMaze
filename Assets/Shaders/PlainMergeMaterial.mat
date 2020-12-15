@@ -7,9 +7,9 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: GradientMaterial
-  m_Shader: {fileID: 4800000, guid: c7c004da709ec7a4796e65741ad42d26, type: 3}
-  m_ShaderKeywords: 
+  m_Name: PlainMergeMaterial
+  m_Shader: {fileID: 4800000, guid: 800580e679924b942b9f01500ccc859a, type: 3}
+  m_ShaderKeywords: UNITY_UI_ALPHACLIP
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -25,12 +25,12 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Floats:
     - _ColorMask: 15
-    - _Scale: 1
+    - _Cutoff: 0.5
     - _Stencil: 0
-    - _StencilComp: 8
-    - _StencilOp: 0
+    - _StencilComp: 3
+    - _StencilOp: 3
     - _StencilReadMask: 255
     - _StencilWriteMask: 255
+    - _UseUIAlphaClip: 1
     m_Colors:
-    - _Color: {r: 0.16862746, g: 0.6745098, b: 0.81960785, a: 1}
-    - _Color2: {r: 0.20087217, g: 0.5172982, b: 0.6981132, a: 1}
+    - _Color: {r: 1, g: 1, b: 1, a: 1}

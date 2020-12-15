@@ -11,6 +11,8 @@ public class SwipeDetector : MonoBehaviour
     public UIHandler scriptUI;
     public MazeSystem mazeSystem;
 
+    public bool alreadyDidOneMovement = false;
+
     [SerializeField]
     private float minDistanceSwipe = 20f;
 
@@ -35,14 +37,19 @@ public class SwipeDetector : MonoBehaviour
                 }
             }
 
-            if(!detectAfterRelease && touch.phase == TouchPhase.Moved){
+            if(!detectAfterRelease && touch.phase == TouchPhase.Moved && !alreadyDidOneMovement){
+                alreadyDidOneMovement = true;
                 fingerDown = touch.position;
                 DetectSwipe();
             }
 
-            if(touch.phase == TouchPhase.Ended){
+            if(touch.phase == TouchPhase.Ended && !alreadyDidOneMovement){
+                alreadyDidOneMovement = true;
                 fingerDown = touch.position;
                 DetectSwipe();
+                alreadyDidOneMovement = false;
+            } else if (touch.phase == TouchPhase.Ended){
+                alreadyDidOneMovement = false;
             }
             
         }
@@ -77,6 +84,8 @@ public class SwipeDetector : MonoBehaviour
                     }
                 break;
             }
+        } else {
+            alreadyDidOneMovement = false;
         }
         
     }
